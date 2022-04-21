@@ -1,0 +1,57 @@
+global geom; %%alloco dello scope globale
+global b_E;
+global h;
+global Domain_lenght;
+global DP;
+
+Sample_Square_Dirichlet;
+h=Domain.InputVertex(4,2)-Domain.InputVertex(1,1); %Altezza del dominio 
+Domain_lenght=Domain.InputVertex(2,1)-Domain.InputVertex(1,1); %%L
+
+DViscosity=5*10^-5;
+%DP=100; %Pa
+DP=1000/(Domain_lenght*DViscosity); % dp/l
+[A,b_E,Ad,u_d]=Stiffness_Laminar(BC,@PGradient);
+
+x=A\(b_E-Ad*u_d);
+
+u_h=built_sol(x,u_d);
+
+axis([0 2 0 1])
+
+
+
+trisurf(geom.elements.triangles,geom.elements.coordinates(:,1),geom.elements.coordinates(:,2),u_h);
+
+    
+%%cerco la stima dell'errore in norma infinito
+u=solution;
+Infinity_norm=Err(solution,u_h,1)
+
+%%Rappresento la norma infinito
+
+function u=built_sol(x,u_d)
+global geom
+u=zeros(geom.nelements.nVertexes,1);
+for j=1:geom.nelements.nVertexes
+    if(geom.pivot.pivot(j)>0)
+        u(j,1)=x(geom.pivot.pivot(j),1);
+    else
+        u(j,1)=u_d(-geom.pivot.pivot(j),1);
+    end
+end
+end
+
+
+
+
+function f=PGradient(dP)
+    f=dP; %%Forzante
+end
+
+function S=solution
+    global h;
+    global geom;
+    global DP;
+    S=DP/2*(geom.elements.coordinates(:,2)).*(h*ones(length(geom.elements.coordinates(:,1)),1)-geom.elements.coordinates(:,2));
+end
